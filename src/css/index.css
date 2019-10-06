@@ -109,6 +109,7 @@ body {
 .message__image {
   width: 100%;
   min-height: 20rem;
+  max-height: 35rem;
   background: white;
   box-shadow: var(--shadow);
   border-radius: 0.6em;

@@ -5,6 +5,7 @@
 
 import React, { useState, useRef, useEffect, memo } from "react";
 import PropTypes from "prop-types";
+import imageDataURI from "image-data-uri";
 import logo from "./icons/logo.svg";
 import downloadIcon from "./icons/download.svg";
 import fetchGif from "./services/fetchGif";
@@ -48,15 +49,6 @@ function App() {
     }
   }
 
-  const download = () => {
-    const link = document.createElement("a");
-    link.href = gifData.original;
-    link.download = `${gifData.title}.gif`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   return (
     <div className="container">
       <div className="message message--warning">
@@ -77,19 +69,50 @@ function App() {
           downSized={gifData.downSized}
           title={gifData.title}
         />
-        <button
-          onClick={download}
-          aria-label="download gif"
-          className="message__button message__button--dark"
-        >
-          DOWNLOAD
-          <img src={downloadIcon} alt="download"></img>
-        </button>
+        <Download url={gifData.original} name={gifData.title} />
       </div>
     </div>
   );
 }
 
+/**
+ * Modern browsers can download files that aren't from same origin this is a workaround to dwnload a remote file
+ * @param `url` Remote URL for the file to be downloaded
+ */
+function Download({ url, name }) {
+  const [creatingURI, setCreatingURI] = useState(false);
+
+  const download = () => {
+    setCreatingURI(true);
+
+    imageDataURI
+      .encodeFromURL(url)
+      .then(uri => {
+        setCreatingURI(false);
+
+        const link = document.createElement("a");
+        link.href = uri;
+        link.download = `${name}.gif`;
+        document.body.appendChild(link);
+        link.click();
+      })
+      .catch(() => {
+        setCreatingURI(false);
+      });
+  };
+
+  return (
+    <button
+      disabled={creatingURI}
+      onClick={download}
+      aria-label="download gif"
+      className="message__button message__button--dark"
+    >
+      DOWNLOAD
+      <img src={downloadIcon} alt="download"></img>
+    </button>
+  );
+}
 
 /**
  * Show low quality image with a blur and swap swap with original once loaded
@@ -100,7 +123,7 @@ function App() {
 const Image = memo(({ original, downSized, title }) => {
   const imageRef = useRef();
   const [isOriginalLoading, setIsOriginalLoading] = useState(true);
-  
+
   useEffect(() => {
     setIsOriginalLoading(true);
 
