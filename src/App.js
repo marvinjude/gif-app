@@ -5,12 +5,12 @@
 
 import React, { useState, useRef, useEffect, memo } from "react";
 import PropTypes from "prop-types";
-import imageDataURI from "image-data-uri";
 import logo from "./icons/logo.svg";
 import downloadIcon from "./icons/download.svg";
 import fetchGif from "./services/fetchGif";
 import { ReactComponent as Spinner } from "./spinner.svg";
 import { ReactComponent as ErrorICon } from "./icons/warning.svg";
+import useDownloader from "./hooks/useDownloader";
 
 function App() {
   const [inputValue, setInputValue] = useState("");
@@ -21,7 +21,7 @@ function App() {
   const [gifData, setGifData] = useState({
     original: "https://media1.giphy.com/media/2dQ3FMaMFccpi/giphy.gif",
     downSized: "https://media1.giphy.com/media/2dQ3FMaMFccpi/giphy.gif",
-    title: "some GIF"
+    title: "default"
   });
 
   const onChange = ({ target: { value } }) => {
@@ -80,45 +80,27 @@ function App() {
  * @param `url` Remote URL for the file to be downloaded
  */
 function Download({ url, name }) {
-  const [creatingURI, setCreatingURI] = useState(false);
-
-  const download = () => {
-    setCreatingURI(true);
-
-    imageDataURI
-      .encodeFromURL(url)
-      .then(uri => {
-        setCreatingURI(false);
-
-        const link = document.createElement("a");
-        link.href = uri;
-        link.download = `${name}.gif`;
-        document.body.appendChild(link);
-        link.click();
-      })
-      .catch(() => {
-        setCreatingURI(false);
-      });
-  };
+  const [fetching, download, error] = useDownloader();
 
   return (
     <button
-      disabled={creatingURI}
-      onClick={download}
+      disabled={fetching}
+      onClick={() => download(url, name)}
       aria-label="download gif"
       className="message__button message__button--dark"
     >
       DOWNLOAD
       <img src={downloadIcon} alt="download"></img>
+      {fetching && <Spinner />}
     </button>
   );
 }
 
 /**
  * Show low quality image with a blur and swap swap with original once loaded
- * @params `original` URL for the original image
- * @params `downSized` URL for the low quality image
- * @params `title` image title. used as `alt` prop as well
+ * @prop `original` URL for the original image
+ * @prop `downSized` URL for the low quality image
+ * @prop `title` image title. used as `alt` prop as well
  */
 const Image = memo(({ original, downSized, title }) => {
   const imageRef = useRef();
